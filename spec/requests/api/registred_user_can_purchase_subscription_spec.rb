@@ -1,6 +1,9 @@
 # rails g controller Api::Subscriptions create --skip-routes
 # rails g migration add_subscriber_to_users subscriber:boolean
 
+# put in the secret key and the publish key
+# EDITOR='code --wait' rails credentials:edit
+
 require 'stripe_mock'
 
 describe "POST /api/subscriptions", type: :request do
@@ -13,20 +16,60 @@ describe "POST /api/subscriptions", type: :request do
   before(:each) { StripeMock.start }
   after(:each) { StripeMock.stop }
 
-  before '' do
-    post '/api/subscriptions',
-    params: {
-      stipeToken: valid_token
-    },
-    headers: headers
+  let(:product) {stripe_helper.create_product}
+  let!(:plan) do
+    stripe_helper.create_plan(
+      id: 'dns_subscription',
+      amount: 50000,
+      currency: 'sek',
+      interval: 'month',
+      interval_count: 6,
+      name: 'DNS Subscription',
+      product: product.id
+    )
+
   end
 
-  it 'set the subscriber attribute to true on sucessfull transaction' do
-    user.reload
-    expect(user.subscriber).to eq true
+  describe 'with valid parameters' do
+    before do
+      post '/api/subscriptions',
+      params: {
+        stripeToken: valid_token
+      },
+      headers: headers
+    end
+  
+    it 'returns success http code' do
+      expect(response).to have_http_status 200
+    end
+  
+    it 'set the subscriber attribute to true on sucessfull transaction' do
+      user.reload
+      expect(user.subscriber).to eq true
+    end
+  
+    it 'successful message' do
+      expect(response_json['message']).to eq "Transaction was successful"
+    end
   end
 
-  it 'successful message' do
-    expect(response_json['message']).to eq "Transaction was successful"
+  describe 'with invalid parameters' do
+    before do
+      post '/api/subscriptions',
+      headers: headers
+    end
+
+    it 'returns a error http code' do
+      expect(response).to have_http_status 422
+    end
+
+    it 'does NOT set subsciber attribute to true' do
+      user.reload
+      expect(user.subscriber).not_to eq true
+    end
+
+    it 'returns an error message' do
+      expect(response_json['message']).to eq "Transaction was NOT successful"
+    end
   end
 end
