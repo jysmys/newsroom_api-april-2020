@@ -87,12 +87,43 @@ or
 {
   "message": "Category can't be blank"
 }
+
+or
+
+{
+  "message": "Image can't be blank"
+}
+```
+
+### **Admin::Articles**
+
+#### index
+
+get /admin/articles returns only unpublished articles (:published=false)
+created_at is based on db created_at
+
+```
+{
+    "articles":[
+        {"id":1,
+        "title":"title1",
+        "category":"category1",
+        "created_at":"YYYY-MM-dd hh:mm"
+        },
+        {"id":2,
+        "title":"title2",
+        "category":"category2",
+        "created_at":"YYYY-MM-dd hh:mm"
+        }
+    ]
+}
 ```
 
 ### **Login**
 
 All [devise_token_auth endpoints](https://devise-token-auth.gitbook.io/devise-token-auth/usage) are open, only sign in is tested for right now.
 post /auth/sign_in
+The login response also includes :role, which can be "user", "journalist", "editor".
 
 ```
 {
@@ -102,6 +133,7 @@ post /auth/sign_in
    "provider":"email",
    "uid":"mystring@mail.com",
    "allow_password_change":false,
+   "role": "user"
 }
 ```
 
